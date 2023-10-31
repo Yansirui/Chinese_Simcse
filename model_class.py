@@ -40,6 +40,7 @@ class BERTFor_Sencl(nn.Module):
         self.bert = bert_mlm
         #self.cls=mlm
         self.sim=Similarity(0.05)
+        #[原句子,positive_sentence,negative_sentence] ---> 3
         self.sent_num=3
         self.mlp=MLP(768,768)
 
@@ -85,6 +86,8 @@ class BERTFor_Sencl(nn.Module):
         if num_sent >= 3:
             z1_z3_cos = self.sim(z1.unsqueeze(1), z3.unsqueeze(0))
             cos_sim = torch.cat([cos_sim, z1_z3_cos], 1)
+        #labels --> [0,1,2,3,...]   因为最终出来的向量为[batch_size,2*batch_size]，对于每个原句子而言，只有一个是他的positive
+        #其他的是其他句子的正例和负例以及自己的负例，他的positive统一都在对角线上，所以当把任务当作分类任务时，他的类别应该是 0~batch_size-1
         labels = torch.arange(cos_sim.size(0)).long().to(device)
         if num_sent == 3:
             # Note that weights are actually logits of weights
